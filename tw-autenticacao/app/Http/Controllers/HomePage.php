@@ -7,8 +7,15 @@ use Illuminate\Support\Facades\Auth;
 
 class HomePage extends Controller
 {
+    // public function __construct()
+    // {
+    //     $this->middleware('auth');
+    // }
+
+
     /**
-     * Handle the incoming request.
+     * Mostra a página inicial do usuário logado
+     * 
      */
     public function __invoke(Request $request)
     {
