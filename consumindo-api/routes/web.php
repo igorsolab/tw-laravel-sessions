@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApresentacaoController;
 use App\Http\Controllers\CursoController;
 use App\Http\Controllers\GithubController;
 use Illuminate\Support\Facades\Route;
@@ -24,3 +25,7 @@ Route::get('/curso/show',[CursoController::class, 'show']);
 Route::get('/curso/create',[CursoController::class, 'create']);
 Route::get('/curso/update',[CursoController::class, 'update']);
 Route::get('/curso/delete',[CursoController::class, 'destroy']);
+
+Route::get('/olamundo', [ApresentacaoController::class, 'olaMundo']);
+
+Route::get('/cursos',[ApresentacaoController::class,'cursos']);
