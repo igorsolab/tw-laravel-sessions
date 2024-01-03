@@ -397,4 +397,4 @@ Para olhar ao que ela se referencia, usamos `$rating->ratingable`, que irá reto
 ```
 
 
-<span style="font-size:30px;font-weight:bold;margin:10px">Trabalhando com tabela pivot</span>
+<span style="font-size:30px;font-weight:bold;margin:10px;">Trabalhando com tabela pivot</span>
