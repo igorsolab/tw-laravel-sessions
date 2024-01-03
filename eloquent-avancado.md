@@ -1,8 +1,8 @@
 # Eloquent Avançado
 
+### Seeders
 
-
-### Populando Tabelas
+#### Populando Tabelas
 
 No Laravel, para popular tabelas no banco de dados usando Seeders, podemos utilizar o arquivo `DatabaseSeeder.php`. No método `run`, podemos adicionar registros usando comandos como:
 
@@ -20,7 +20,7 @@ No Laravel, para popular tabelas no banco de dados usando Seeders, podemos utili
 ])
 
 ```
-### Utilizando Seeders
+#### Utilizando Seeders
 
 Executamos o comando:
 ```php
@@ -28,7 +28,7 @@ php artisan db:seed
 ```
 para inserir os dados no banco de dados. No entanto, existem maneiras mais eficientes, como a criação de Seeders específicos.
 
-### Criando um Novo Seeder
+#### Criando um Novo Seeder
 Para criar um novo Seeder pelo artisan, utilizamos o comando:
 
 ```php
@@ -42,21 +42,21 @@ O Laravel cria o arquivo dentro da pasta `database/seeds`. Podemos usá-lo no m�
 $this->call(UsersTableSeeder::class);
 ```
 
-### Usando Factory para Dados Falsos
+#### Usando Factory para Dados Falsos
 O Laravel fornece Factory para criar dados falsos de maneira mais profissional. A pasta `database/factories` contém arquivos como `UserFactory.php`. Para usar um Factory, dentro do UsersTableSeeder:
 
 ```php
 factory(App\User::class)->make();
 ```
 
-### Executando Seeders Específicos
+#### Executando Seeders Específicos
 Para executar um Seeder específico usando o artisan, usamos o comando:
 
 ```php
 php artisan db:seed --class=UsersTableSeeder
 ```
 
-### Utilizando o Faker
+#### Utilizando o Faker
 O arquivo `config/app.php` possui o comando `'faker_locale' => 'en_US'`, substituir por 'pt_BR'. 
 
 Podemos criar múltiplos registros facilmente usando o Factory:
@@ -64,7 +64,7 @@ Podemos criar múltiplos registros facilmente usando o Factory:
 factory(App\User::class, 20)->create();
 ```
 
-### Zerando todos os dados do banco com migrate
+#### Zerando todos os dados do banco com migrate
 Ao criar todos os dados percebemos que se formos criar uma nova tabela 
 
 ```php
@@ -72,7 +72,7 @@ php artisan migrate:refresh
 ```
 
 
-### Populando dados da tabela `categories`
+#### Populando dados da tabela `categories`
 Iremos criar uma nova factory para a tabela de categorias de POSTs, e logo em seguida um novo seed para implementar o Factory
 
 ```php
@@ -105,7 +105,7 @@ php artisan db:seed --class=CategoriesTableSeeder
 ```
 
 
-### Populando dados da tabela `posts`
+#### Populando dados da tabela `posts`
 
 Iremos criar uma nova factory para a tabela de POSTs, e logo em seguida um novo seed para implementar o Factory
 
@@ -228,3 +228,7 @@ Agora podemos usar o comando para popular todos os seeders de uma vez:
 ```php
 php artisan db:seed
 ```
+
+
+## Relações Polimórficas
+
