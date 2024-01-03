@@ -1,0 +1,17 @@
+Eloquent Avançado
+
+
+database/seeds/DatabaseSeeder.php
+Esse arquivo pode popular a tabela 
+
+No método "run"
+
+usar o comando 
+
+\DB::table('users')->insert([
+
+	'name'=>'joao',
+	'email'=>'joao@teste.com',
+	'password' => bcrypt('1234')
+
+])
