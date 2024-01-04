@@ -397,7 +397,6 @@ Para olhar ao que ela se referencia, usamos `$rating->ratingable`, que irá reto
 ```
 
 
-<<<<<<< HEAD
 <span style="font-size:30px;font-weight:bold;margin:10px">Trabalhando com tabela pivot</span>
 
 ### Como usar o método `pivot`
@@ -558,6 +557,14 @@ No `PostController.php`, no método `index`, iremos adicionar o método que quer
                 ->withCount('comments')
                 ->paginate(10);
 ```
-=======
-<span style="font-size:30px;font-weight:bold;margin:10px;">Trabalhando com tabela pivot</span>
->>>>>>> 452d2c1085aeaf89533661ca2419fc840c174281
+
+E agora no arquivo de listagem de posts `post.blade.php`, iremos substituir o
+```php
+posts->comments()->count()
+```
+Por:
+```php
+posts->comments_count
+```
+
+O Laravel cria uma variável dinâmica e faz apenas uma consulta para todos os dados em uma consulta apenas. O nome da variável varia de acordo com o nome do método criado para acessar a relação.
