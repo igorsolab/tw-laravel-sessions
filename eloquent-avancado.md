@@ -769,3 +769,144 @@ Este caso ignoramos apenas o escopo global que criamos. Existe uma forma de igno
 ```php
 App\Model\Post::withoutGlobalScopes('')->get()
 ```
+
+### Classe propria para escopos
+
+Mesmo sendo poucos escopos criados, não é uma boa prática utilizar os escopos diretamente nos Models, por isso vamos criar classes próprias para eles.
+
+Vamos criar a pasta no caminho `App\Scopes\VisibleScope.php`
+
+```php
+<?php
+namespace App\Scopes;
+use Illuminate\Database\Eloquent\Scope;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
+class VisibleScope implements Scope {
+    public function apply(Builder $builder, Model $model)
+    {
+        $builder->whereHas('details',function($query){
+            $query->where('status','publicado')
+                ->where('visibility','publico');
+        })
+    }
+}
+?>
+```
+
+e chamamos ele no `Post.php` dentro do método boot()
+
+```php
+use App\Scopes\VisibleScope;
+
+...
+
+static::addGlobalScope(new VisibleScope);
+```
+
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Eventos e Observers</span>
+
+
+No Laravel é possível criarmos eventos após alguma ação, por exemplo, após criar um campo, após atualizar e etc.
+
+Vamos colocar mão na massa!
+
+### Executando ações com events e listeners
+
+
+Iremos utilizar o Model `Post.php`.
+
+Criaremos um array dessa forma:
+```php
+    protected $dispatchesEvents = [
+        'created'=>PostCreated::class
+     ]
+```
+
+Para criar eventos devemos ir no caminho `App\Providers\EventServiceProvider.php` e acessar a variável `$listen`.
+Nessa variável iremos incluir mais uma lógica nela:
+```php
+    protected $listen = [
+        Registered::class => [
+            SendEmailVerificationNotification::class,
+        ],
+        'App\Events\PostCreated'=> [
+            'App\Listeners\PublishOnFacebook',
+            'App\Listeners\PublishOnTwitter'
+        ]
+    ]
+```
+Para criar evento no tinker:
+```php
+php artisan event:generate
+```
+
+Dentro do `App\` ele criou o arquivo no diretório `Events\PostCreated.php`, e também `Listeners\PublishOnFacebook` e `Listeners\PublishOnTwitter` 
+
+Está faltando agora implementar a lógica dos listeners.
+
+### Lógica dos Listeners
+
+Iremos criar nossa lógica dentro do método `handle` do `PublishOnFacebook`
+```php
+public function handle(PostCreated $event)
+{
+    \Log::debug('Publicar no facebook');
+}
+```
+
+E também dentro do método `handle` do `PublishOnTwitter`
+```php
+public function handle(PostCreated $event)
+{
+    \Log::debug('Publicar no twitter');
+}
+```
+
+
+Ao usar create no POST ele irá criar os logs em `App\Storage\Logs` e abrir o último log do dia.
+
+Graças ao parâmetro $event passado dentro dos métodos `Listeners\PublishOnFacebook` e `Listeners\PublishOnTwitter`, conseguimos acessar os dados individuais do post criado.
+
+```php
+// PublishOnTwitter
+public function handle(PostCreated $event)
+{
+    \Log::debug('O Post '. $event->post->id .' foi publicado no twitter');
+}
+
+// PublishOnFacebook
+public function handle(PostCreated $event)
+{
+    \Log::debug('O Post '. $event->post->id .' foi publicado no facebook');
+}
+
+```
+
+
+### Observer
+
+Podemos criar uma classe no Laravel que é o Observer que será executado quando tiver o mesmo nome do Model a quem ele se refere.
+
+Vamos utilizar o `artisan` para criar esse observer
+
+```php
+php artisan make:observer PostObserver --model=\Model\Post
+```
+
+Ele traz consigo alguns métodos como `created`, `updated`, `deleted`, pois ele adiciona um gatilho no model Post
+
+Em `App\Providers\AppServiceProvider.php` dentro do método `boot()` irei adicionar:
+
+
+```php
+\App\Post::observe(\App\Observers\PostObserver::class);
+```
+
+No método `created` e `deleted` do caminho `\App\Observers\PostObserver` iremos criar o seguinte:
+
+```php
+\Log::debug('foi deletado/criado com sucesso');
+```
