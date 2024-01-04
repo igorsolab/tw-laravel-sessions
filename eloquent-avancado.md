@@ -398,3 +398,162 @@ Para olhar ao que ela se referencia, usamos `$rating->ratingable`, que irá reto
 
 
 <span style="font-size:30px;font-weight:bold;margin:10px">Trabalhando com tabela pivot</span>
+
+### Como usar o método `pivot`
+
+Para utilizar o método `pivot`, usamos `->pivot` na tabela que está se relacionando com a tabela que estamos utilizando
+
+Por exemplo:
+
+```php
+    $post = \App\Model\Post::find(1);
+```
+Aqui ele retornará o Post com id 1. Iremos acessar as categorias e após acessar o `->pivot()`
+
+### Timestamp ao criar dado
+
+Ao criar algum dado com  o método `create` do Eloquent, utilizando tinker, o timestamp sempre retornava null.
+
+Mas usando o método `->withTimestamp()` no retorno do Model, ele sempre retornará o timestamp.
+
+
+### Criando novo campo na tabela PIVOT
+
+Ao criar um novo campo na tabela pivot, o tinker ou laravel não reconhecem esse campo por padrão.
+Para esse campo ser reconhecido pelo Laravel utilizamos o método `->withPivot('username')` e passamos qual o campo que queremos utilizar.
+
+
+### Renomeando a relação PIVOT
+
+Por padrão, acessamos a tabela pivot de uma tabela com o método `->pivot`. Porém esse nome é muito geral, e podemos querer especificar o nome da relação.
+Para conseguirmos renomear, iremos acessar o model da tabela que queremos renomear a relação.
+
+```php
+    return belongTo()->as('relacao');
+```
+
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Agregação e contagem</span>
+
+### Métodos de agregação
+
+Para prosseguir nesse curso iremos utilizar o `tinker` novamente.
+
+```php 
+php artisan tinker
+```
+
+### Método COUNT
+O primeiro método que vamos utilizar será para fazer a contagem de quantos registros temos na tabela que iremos consumir, que nesse caso será a tabela de Avaliações, para isso utilizaremos método o `count`:
+```php
+App\Model\Rating::count();
+```
+
+### Método SUM
+Ele retornará: `8`. Pois temos 8 registros na tabela.
+
+O segundo método que vamos utilizar será para fazer a soma dos registros, utilizaremos método o `sum`:
+```php
+App\Model\Rating::sum('value');
+```
+Diferentemente do `count` que não precisamos informar o campo, pois ele conta o nº de linhas, iremos aqui informar esse parâmetro apenas para especificar em qual campo queremos fazer a soma.
+Ele retornará: `53`.
+
+### Método AVG
+O terceiro método que vamos utilizar será para fazer a média dos registros, utilizaremos método o `avg`:
+```php
+App\Model\Rating::avg('value')
+```
+
+Ele retornará: `6.625`.
+
+
+### Método MIN
+O quarto método que vamos utilizar será para trazer o menor registro do campo `value` da tabela `ratings`, para fazer isso utilizaremos método o `min`:
+```php
+App\Model\Rating::min('value')
+```
+
+Ele retornará: `0`. Pois é o menor valor individual de alguma das avaliações
+
+
+
+### Método MIN
+O quinto método que vamos utilizar será para trazer o maior registro do campo `value` da tabela `ratings`, para fazer isso utilizaremos método o `max`:
+```php
+App\Model\Rating::max('value')
+```
+
+Ele retornará: `10`. Pois é o maior valor individual de alguma das avaliações
+
+### Métodos de agregação com WHERE
+
+Podemos usar a cláusula WHERE e criar querys mais complexas 
+
+Iremos pegar no primeiro momento apenas a média das avaliações do campo `posts`:
+```php
+App\Model\Rating::where('ratingable_type','App\Post')->avg('value');
+```
+
+
+Agora vamos pegar a média das avaliações do campo `users`:
+```php
+App\Model\Rating::where('ratingable_type','App\User')->avg('value');
+```
+
+
+Agora vamos pegar o valor mínimo das avaliações do campo `posts`:
+```php
+App\Model\Rating::where('ratingable_type','App\Post')->min('value');
+```
+
+Agora vamos pegar o valor mínimo das avaliações do campo `users`:
+```php
+App\Model\Rating::where('ratingable_type','App\User')->min('value');
+```
+
+
+### Método de agregação via relação
+
+Podemos usar métodos de agregação via relações da tabela.
+```php
+$post = App\Model\Post::find(1)
+
+$post->rating()->avg('value')
+$post->rating()->sum('value')
+$post->rating()->min('value')
+$post->rating()->max('value')
+```
+
+### Eager Load para contagem
+
+Vamos exibir o número de comentários no nosso projeto. Se formos colocar da maneira que estudamos pode não ser uma solução viável, pois em um projeto grande, como muitos posts e muitos comentários, provavelmente iria demorar muito para carregar e o aplicativo ficaria bem pesado.
+
+Para isso utilizaremos uma biblioteca que nos ajudará a observar o que está acontecendo por baixo dos panos.
+
+Use o comando a seguir para baixar a biblioteca:
+```php
+composer require barryvdh/laravel-debugbar --dev
+```
+
+Na página de lista de posts onde está sendo chamado vamos fazer o primeiro teste de performance. Como a página de posts já utiliza a instância de posts, iremos aproveitar
+
+```php
+posts->comments()->count()
+```
+
+No Debugbar é possível ver que ele faz uma consulta para cada posts, isso em um projeto grande causaria um grande problema.
+
+Para nossa sorte o Laravel já possui métodos que cuidam disso, utilizaremos o `withCount()`
+
+No `PostController.php`, no método `index`, iremos adicionar o método que queremos para fazer o Eager Load:
+
+```php
+    $posts = Post::orderBy('created_at','desc')
+                ->whereHas('details',function($query){
+                    $query->where('status','publicado')
+                    ->where('visibility', 'publico');
+                })
+                ->withCount('comments')
+                ->paginate(10);
+```
