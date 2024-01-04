@@ -568,3 +568,204 @@ posts->comments_count
 ```
 
 O Laravel cria uma variável dinâmica e faz apenas uma consulta para todos os dados em uma consulta apenas. O nome da variável varia de acordo com o nome do método criado para acessar a relação.
+
+
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Soft Delete</span>
+
+### Como utilizar
+
+Primeiramente criamos um arquivo nas migrations para fazer a alteração na tabela que iremos utilizar de exemplo.
+
+```php
+php artisan make:migration PostAlterTable
+```
+
+Como o título lembra, estamos fazer uma alteração no Post. Dentro da migration criada, ficará assim:
+
+```php
+    Schema::table('post', function(Blueprint $table){
+        $table->softDeletes();
+    });
+```
+
+Dentro do model Post iremos fazer algumas alterações.
+Vamos importar o SoftDeletes
+```php
+use Illuminate\Database\Eloquent\SoftDeletes;
+```
+
+Dentro da classe Post iremos declarar que estamos chamando ele;
+```php
+use SoftDeletes;
+```
+
+
+Iremos também declarar qual o campo da tabela está sendo alterado :
+
+```php
+protected $date = ['deleted_at'];
+```
+
+Para visualizar todos arquivos, inclusive os da lixeira, vamos usar o tinker:
+
+```php
+php artisan tinker
+```
+
+E usamos o comando:
+```php
+App\Model\Post::withTrashed()->get()
+```
+
+Podemos filtrar ainda mais a pesquisar o arquivos da lixeira:
+
+```php
+App\Model\Post::withTrashed()->find(3)
+```
+
+E ainda podemos saber em forma de boleano se o arquivo foi excluído:
+
+```php
+App\Model\Post::withTrashed()->find(3)->trashed()
+```
+
+Agora para conseguir visualizar apenas os arquivos excluídos, utilizamos o método `onlyTrashed()` dessa forma:
+
+```php
+App\Model\Post::onlyTrashed()
+```
+
+E também podemos restaurar algum arquivo com o método `restore()`
+
+```php
+App\Model\Post::onlyTrashed()->find(2)->restore()
+```
+
+
+
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Escopos</span>
+
+
+Nesta aula iremos entender como funcionam os escopos.
+
+
+Para começar iremos criar uma nova migration
+
+```php
+php artisan make:migration alter_post_table_add_approved
+```
+
+Nessa nova coluna que adicionamos, iremos escrever assim:
+
+```php
+Schema::table('posts',function(Blueprint $table){
+    $table->integer('approved')->after('content');
+})
+```
+
+O método after funciona especificamente para o mysql, onde é possivel escolher onde ficará uma coluna recém criada.
+
+
+Agora vamos rodar a migration que criamos:
+```php
+php artisan migrate
+```
+
+
+### Como encontrar os arquivos aprovados
+Usando métodos, convencionais chamaríamos assim:
+```php
+App\Model\Post::where('approved',1)->get()
+```
+
+Mas existe uma forma simples de fazer isso
+Nessa forma vamos usar o escopo local para criar o método completo
+```php
+App\Model\Post::IsApproved()->get()
+```
+Criada essa função, vamos utilizar um método na class `Post`
+
+```php
+public function scopeIsApproved($query)
+{
+    return $query->where('approved',1);
+}
+```
+
+Podemos também criar um método que retorne de forma dinâmica outros tipos de aprovados.
+
+```php
+public function scopeApproved($query,$approved)
+{
+    return $query->where('approved',$approved);
+}
+```
+
+
+Chamamos ele dessa forma no tinker:
+```php
+App\Model\Post::approved()->get(1)
+```
+
+
+### Relações dentro do escopo
+
+Utilizaremos nesta sessão relações dentro de escopo
+
+```php
+public function scopeHasCategories($query)
+{
+    return $query->whereHas('categories')
+}
+```
+
+Vamos testar com o tinker
+
+```php
+php artisan tinker
+```
+
+Ao acessar o método com o tinker: 
+```php
+$post = App\Model\Post::hasCategories()->get()
+```
+
+Ele irá retornar apenas as categorias que estão ligadas aos posts
+
+### Escopo global
+
+
+Até agora utilizamos apenas escopo local
+Para utilizar o escopo global precisamos sobrescrever o método boot:
+```php
+protected static function boot()
+{
+    parent::boot()
+
+    static::addGlobalScope('orderByCreatedAt', function(Builder $builder){
+        $builder->orderBy('created_at', 'desc');
+    });
+}
+```
+
+Vamos testar no tinker:
+```php
+App\Model\Post::get()
+```
+Ele trouxe todos os campos ordenados. Então funcionou, ele está obedecendo o escopo global!
+
+#### Ignorar o escopo global
+
+Para ignorarmos o escopo global utilizamos o método
+
+```php
+App\Model\Post::withoutGlobalScope('orderByCreatedAt')->get()
+```
+
+Este caso ignoramos apenas o escopo global que criamos. Existe uma forma de ignorar todos os escopos globais do model:
+
+```php
+App\Model\Post::withoutGlobalScopes('')->get()
+```
