@@ -1073,3 +1073,214 @@ protected $appends = [ 'summary_content' ];
 
 
 Agora ele sempre estará disponível quando trazermos todos os dados.
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Recursos úteis</span>
+
+### Como trabalhar com API Resource
+
+
+Vamos criar um resource para Post, utilizaremos o `artisan` para isso.
+```php
+php artisan make:resource Post
+```
+Ele ficará localizado dentro de `App\Http\Resource`.<br>
+Uma situação: <br>
+* Queremos que o retorno dos campos seja em português, pois o cliente que usará é uma empresa nacional.<br>
+
+```php
+public function toArray($request)
+{
+    return [
+        'codigo'    =>$this->id,
+        'titulo'    =>$this->title,
+        'conteudo'  =>$this->content,
+        'aprovado'  =>$this->approved
+    ];
+}
+```
+
+Iremos criar o endpoint para testarmos os nosso recursos. Na pasta de `App\Routes\api.php` criaremos:
+```php
+Route::get('post/{id}', function($id){
+    return new \App\Http\Resource\Post(\App\Post::find($id));
+})
+```
+
+### Utilizando mais um banco dados no Laravel
+
+Em `Config\database.php` encontraremos:
+
+```php
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'forge'),
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+```
+
+
+Vamos criar uma nova conexão:
+
+```php
+
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'forge'),
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'outra' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB2_HOST', '127.0.0.1'),
+            'port' => env('DB2_PORT', '3306'),
+            'database' => env('DB2_DATABASE', 'forge'),
+            'username' => env('DB2_USERNAME', 'forge'),
+            'password' => env('DB2_PASSWORD', ''),
+            'unix_socket' => env('DB2_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+```
+
+
+
+E no nosso `.env` vamos configurar essa conexao:
+
+```php
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=fortify
+DB_USERNAME=root
+DB_PASSWORD=
+
+DB2_CONNECTION=mysql
+DB2_HOST=127.0.0.1
+DB2_PORT=3306
+DB2_DATABASE=outra_conexao
+DB2_USERNAME=root
+DB2_PASSWORD=
+```
+
+No nosso model `User` como exemplo, vamos usar a conexao do nosso novo banco de dados configurado.
+
+```php
+protected $connection = 'outra';
+```
+
+Vamos testar com tinker:
+
+```php
+php artisan tinker
+
+\App\Model\User::find(1)
+```
+
+E já trouxe os campos de usuários da tabela da nova conexão.
+
+
+### Excessões no Eloquent
+
+
+Podemos tratar algumas excessões comuns, por exemplo ao usar uma URL que o sistema não reconhece somos direcionados a uma página. Vamos tratar essas excessões para exibir uma mensagem no lugar de mostrar uma página 404.
+
+```php
+Route::get('post/{id}', function($id){
+
+    try{
+        return new \App\Http\Resource\Post(\App\Post::find($id));
+    }catch(\Illuminate\Database\Eloquent\ModelNotFoundException $e){
+        return response(['message'=>'Not Found'], 404)
+    }
+
+})
+```
+### Comparando models
+
+No Eloquent conseguimos comparar duas instâncias de models
+
+```php
+php artisan tinker
+
+$u1 = App\Model\User::find(1)
+$u2 = App\Model\User::find(2)
+
+$u1->is($u2)
+// Retorna false
+
+$u11 = App\Model\User::find(1)
+$u1->is($u11)
+// Retorna true
+```
+
+
+### Where dinâmico
+
+No normalmente usamos a cláusula `where` assim:
+```php
+App\Model\User::where('name','Ana Leon')->get()
+
+// Ele retorna um registro com o nome encontrado
+```
+
+Podemos usar `where` de forma dinâmica:
+
+```php
+App\Model\User::whereName('Ana Leon')->get()
+
+// Ele retorna um registro com o nome encontrado
+```
+Podemos usar mais de um campo para verificar de forma dinâmica:
+
+```php
+App\Model\User::whereNameAndEmail('Ana Leon','ana@teste.com')->get()
+
+// Ele retorna um registro com o nome e email encontrado
+```
+
+Podemos usar o `or` no where também
+
+
+```php
+App\Model\User::whereNameOrEmail('Ana Leon','outro@teste.com')->get()
+
+// Ele retorna um registro com o nome encontrado e outro registro encontrado pelo email
+```
+
+
