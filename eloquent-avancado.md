@@ -955,6 +955,7 @@ Chamaremos ele no `post.blade.php`.
 ```
 O Laravel auto compreende pelo nome usado no método.
 
+### Mutators
 
 ##### Formatando string do comentário do POST
 
@@ -969,7 +970,7 @@ public function setTitleAttribute($valor)
 ```
 
 
-#### Realizando cast de propriedade no model
+##### Realizando cast de propriedade no model
 
 Queremos alterar o campo `approved` do model Post, para que no lugar de retornar 0 ou 1, retorne true ou false.
 
@@ -992,3 +993,83 @@ Agora vamos testar um dado que está na lixeira.
 ```php
 App\Model\Post::withTrashed()->find(1)->approved
 ```
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Serialização</span>
+
+Serialização é o processo de conversão entre um formato e outro dentro da aplicação
+
+### Escondendo campo da tabela
+ Iremos esconder o campo do titulo do retorno dos comentários.
+```php
+protected $hidden = [ 
+    "title"
+];
+```
+
+Para testar vamos utilizar o `tinker`:
+
+```php
+App\Model\Comment::first()->toArray()
+```
+
+Vemos que o title realmente ficou invisivel. Porém ele ainda é acessível:
+
+```php
+App\Model\Comment::first()->title
+```
+E podemos recuperar todos os dados novamente, com os visiveis e invisiveis:
+```php
+App\Model\Comment::first()->makeVisible('title')->toArray()
+```
+Ele apareceu novamente.
+
+
+### Deixando visivel apenas os campos que queremos
+
+No Laravel temos uma palavra reservada para definirmos os elementos que queremos que fique visível, mas para usar ela não podemos usar mais o `$hidden`.<br>
+Então nosso código fica assim:
+```php
+// protected $hidden = ["title"];
+protected $visible = ['title','content']
+```
+
+Ao testarmos:
+
+```php
+App\Model\Comment::first()->toArray()
+```
+Ele retorna apenas o `title` e o `content`.<br>
+
+Para trazer mais resultados, usamos os campos que queremos ver dentro do `makeVisible`:
+
+```php
+App\Model\Comment::first()->makeVisible('created_at')->toArray()
+```
+
+
+Também temos um método contrário ao `makeVisible` que consegue serializar em tempo de execução:
+```php
+App\Model\Comment::first()->makeHidden('title')->toArray()
+```
+Conseguimos tornar o campo `title` invisivel, ele que colocamos dentro do método `$visible`.
+
+#### Acessando assessores na serialização
+
+Ao acessarmos o model `Post` com o tinker a fim de recuperar os valores, conseguimos perceber que o assessor criado `summary_content` não é visível.<br>
+Para podermos visualizá-lo usamos o método `append` e descrevemos quem queremos adicionar.
+
+```php
+App\Model\Comment::first()->append('summary_content')->toArray()
+```
+E funcionou!<br>
+Mas percebemos que não seria uma boa prática repertirmos sempre esse método para trazê-lo, podemos fazer com que ele venha juntoao pesquisarmos os campos.<br>
+
+No model `Post` vamos usar uma propriedade chamada `$appends`.
+
+
+```php
+protected $appends = [ 'summary_content' ];
+```
+
+
+Agora ele sempre estará disponível quando trazermos todos os dados.
