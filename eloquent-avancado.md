@@ -910,3 +910,85 @@ No método `created` e `deleted` do caminho `\App\Observers\PostObserver` iremos
 ```php
 \Log::debug('foi deletado/criado com sucesso');
 ```
+
+
+
+<span style="font-size:30px;font-weight:bold;margin:10px">Acessors e Mutators</span>
+
+
+### Acessores
+
+Para exemplificar os acessores vamos utilizar nossa página de post do blog. Iremos limitar o conteúdo que aparece no inicio do blog, para isso iremos utilizar o campo `content` da nossa tabela `posts`.<br>
+No model `Post` criaremos um método novo.
+
+```php
+public function getContentAttribute($value)
+{
+    return mb_strmwidth($value, 0, 30, "...");
+}
+```
+
+Ao realizar essa modificação quando atualizamos a página e deu certo... Porém ao entrar no post específico ele também mostra apenas os 30 caracteres. Vamos resolver isso!
+
+Iremos comentar o código acima, e iremos criar um novo método:
+
+```php
+// public function getContentAttribute($value)
+// {
+//     return mb_strmwidth($value, 0, 30, "...");
+// }
+
+public function getSummaryContentAttribute()
+{
+    return mb_strmwidth($this->content, 0, 30, "...");
+}
+
+
+```
+
+O que fizemos agora foi: no lugar de modificar a string em todos lugares, criamos um novo atributo que usará o content, basta usar ele na view que você quer exibir ele.<br>
+
+Chamaremos ele no `post.blade.php`.
+
+```php
+{{ post->summary_content }}
+```
+O Laravel auto compreende pelo nome usado no método.
+
+
+##### Formatando string do comentário do POST
+
+Queremos que no assunto do nosso comentário a primeira letra seja maiúscula.<br>
+Dentro do model `Comment.php` iremos criar um método.
+
+```php
+public function setTitleAttribute($valor)
+{
+    $this->attribute['title'] = ucfirst($value);
+}
+```
+
+
+#### Realizando cast de propriedade no model
+
+Queremos alterar o campo `approved` do model Post, para que no lugar de retornar 0 ou 1, retorne true ou false.
+
+No model `Post.php` criaremos uma variável:
+
+```php
+protected $casts = [
+    'approved'=>'boolean'
+]
+```
+
+Agora vamos testar no `tinker`
+
+```php
+App\Model\Post::find(2)->approved
+```
+
+Ele retorna boleano, <strong>funcionou!!!</strong>
+Agora vamos testar um dado que está na lixeira.
+```php
+App\Model\Post::withTrashed()->find(1)->approved
+```
